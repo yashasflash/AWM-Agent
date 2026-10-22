@@ -1,0 +1,65 @@
+{
+  "name": "AWM Agent - AI Waste Triage & Dispatch Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "awm-waste-report",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook Inbound",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following municipal waste complaint:\n\nReport ID: {{$json.body.report_id}}\nCategory: {{$json.body.issue_type}}\nDescription: {{$json.body.description}}\nWard: {{$json.body.ward}}\nLocation: {{$json.body.location}}\n\nRespond ONLY with a valid JSON object matching this exact schema:\n{\n  \"waste_category\": \"<specific classification>\",\n  \"priority\": \"LOW\" | \"MEDIUM\" | \"HIGH\",\n  \"recommended_action\": \"<concise dispatch instruction>\",\n  \"assigned_department\": \"Solid Waste Management\" | \"Drainage & Cleansing\" | \"Health & Sanitation\",\n  \"reason\": \"<brief justification for priority and department selection>\"\n}"
+      },
+      "id": "2",
+      "name": "AI Decision Engine",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "3",
+      "name": "Respond to FastAPI Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Inbound": {
+      "main": [
+        [
+          {
+            "node": "AI Decision Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Decision Engine": {
+      "main": [
+        [
+          {
+            "node": "Respond to FastAPI Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
